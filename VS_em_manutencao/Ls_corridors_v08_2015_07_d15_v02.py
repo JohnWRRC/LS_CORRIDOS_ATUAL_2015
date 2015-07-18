@@ -141,7 +141,6 @@ class Form1(wx.Panel):
         Form1.patch_id_list=''
         
         
-        
         Form1.edtCost='Name cost map'
         Form1.edtST='Map Name of Source and Target'
         Form1.escname=''
