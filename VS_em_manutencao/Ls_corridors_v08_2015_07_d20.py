@@ -287,7 +287,7 @@ class Form1(wx.Panel):
     
         
         
-
+        grass.run_command('r.mask',flags='r')
         
         self.quote = wx.StaticText(self, id=-1, label="LandScape Corridors",pos=wx.Point(20, 20))
         
@@ -694,7 +694,7 @@ class Form1(wx.Panel):
       
 
         if event.GetId()==10:   #10==START
-                        
+                   
           
          
           
@@ -1077,10 +1077,10 @@ class Form1(wx.Panel):
               
              
             Form1.listExport.append(Form1.mapa_corredores_sem0)
-            grass.run_command('g.region', rast=expt)
+            grass.run_command('g.region', rast=Form1.mapa_corredores_sem0)
             
             os.chdir(Form1.OutDir_files_TXT)
-            grass.run_command('r.out.gdal',input=expt, out=expt+'.tif',nodata=-9999)
+            grass.run_command('r.out.gdal',input=Form1.mapa_corredores_sem0, out=Form1.mapa_corredores_sem0+'.tif',nodata=-9999)
             self.logger.AppendText(" removing auxiliary files...: \n")  
             
             grass.run_command('g.remove',vect='temp_point1_s,temp_point2_s,temp_point1_t,temp_point2_t,pnts_aleat_S,pnts_aleat_T,source_shp,target_shp,custo_aux_cost_drain_sem0_line', flags='f')
@@ -1100,7 +1100,7 @@ class Form1(wx.Panel):
           grass.run_command('g.region', rast=Form1.NEXPER_FINAL+"_MW_ALL_Corridors")
                       
           os.chdir(Form1.OutDir_files_TXT)
-          grass.run_command('r.out.gdal',input=Form1.NEXPER_FINAL+"_MW_ALL_Corridors", out=Form1.NEXPER_FINAL+"_MW_ALL_Corridors.TIF",nodata=-9999)                           
+          grass.run_command('r.out.gdal',input=Form1.NEXPER_FINAL+"_MW_ALL_Corridors", out=Form1.NEXPER_FINAL+"_MW_ALL_Corridors.TIF",nodata=-9999,overwrite = True)                           
           d= wx.MessageDialog( self," Finish"
                                ,"", wx.OK)
           
