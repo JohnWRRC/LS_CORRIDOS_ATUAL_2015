@@ -141,7 +141,6 @@ class Form1(wx.Panel):
         Form1.patch_id_list=''
         
         
-        # variavel para label statica
         Form1.edtCost='Name cost map'
         Form1.edtST='Map Name of Source and Target'
         Form1.escname=''
@@ -1077,8 +1076,13 @@ class Form1(wx.Panel):
               
               
              
-            Form1.listExport.append(Form1.mapa_corredores_sem0)  
+            Form1.listExport.append(Form1.mapa_corredores_sem0)
+            grass.run_command('g.region', rast=expt)
+            
+            os.chdir(Form1.OutDir_files_TXT)
+            grass.run_command('r.out.gdal',input=expt, out=expt+'.tif',nodata=-9999)
             self.logger.AppendText(" removing auxiliary files...: \n")  
+            
             grass.run_command('g.remove',vect='temp_point1_s,temp_point2_s,temp_point1_t,temp_point2_t,pnts_aleat_S,pnts_aleat_T,source_shp,target_shp,custo_aux_cost_drain_sem0_line', flags='f')
             grass.run_command('g.remove',rast='mapa_custo,mapa_corredores,custo_aux_cost_drain,source,target,custo_aux_cost_drain_sum,custo_aux_cost_drain_sem0,custo_aux_cost,custo_aux,corredores_aux,aleat,aleat2,aleat2_Gros,aleat3,aleat_Gros,apoio1', flags='f')
             grass.run_command('g.remove',rast='apoio2,apoio2b,apoio2c,apoio2d', flags='f')
@@ -1088,18 +1092,15 @@ class Form1(wx.Panel):
             grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
 
             
-            grass.run_command('r.series',input=Form1.listExport,out=Form1.OutArqCost+'RSeries',method="maximum")
-            grass.run_command('g.region', rast=Form1.OutArqCost+'RSeries',verbose=False)
-            grass.run_command('r.neighbors',input=Form1.OutArqCost+'RSeries',out=Form1.NEXPER_FINAL+"_MW_ALL_Corridors", method='average',size=Form1.escfina1,overwrite = True)
+          grass.run_command('r.series',input=Form1.listExport,out=Form1.OutArqCost+'RSeries',method="maximum")
+          grass.run_command('g.region', rast=Form1.OutArqCost+'RSeries',verbose=False)
+          grass.run_command('r.neighbors',input=Form1.OutArqCost+'RSeries',out=Form1.NEXPER_FINAL+"_MW_ALL_Corridors", method='average',size=Form1.escfina1,overwrite = True)
 
-            Form1.listExport.append(Form1.NEXPER_FINAL+"_MW_ALL_Corridors")
             
-            os.chdir(Form1.OutDir_files_TXT)
-            for expt in Form1.listExport:
-              grass.run_command('g.region', rast=expt)
-              grass.run_command('r.out.gdal',input=expt, out=expt+'.tif',nodata=-9999)           
-              
-                
+          grass.run_command('g.region', rast=Form1.NEXPER_FINAL+"_MW_ALL_Corridors")
+                      
+          os.chdir(Form1.OutDir_files_TXT)
+          grass.run_command('r.out.gdal',input=Form1.NEXPER_FINAL+"_MW_ALL_Corridors", out=Form1.NEXPER_FINAL+"_MW_ALL_Corridors.TIF",nodata=-9999)                           
           d= wx.MessageDialog( self," Finish"
                                ,"", wx.OK)
           
