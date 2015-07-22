@@ -1092,7 +1092,7 @@ class Form1(wx.Panel):
             grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
 
             
-          grass.run_command('r.series',input=Form1.listExport,out=Form1.OutArqCost+'RSeries',method="maximum")
+          grass.run_command('r.series',input=Form1.listExport,out=Form1.OutArqCost+'RSeries',method="maximum",overwrite = True)
           grass.run_command('g.region', rast=Form1.OutArqCost+'RSeries',verbose=False)
           grass.run_command('r.neighbors',input=Form1.OutArqCost+'RSeries',out=Form1.NEXPER_FINAL+"_MW_ALL_Corridors", method='average',size=Form1.escfina1,overwrite = True)
 
@@ -1100,7 +1100,7 @@ class Form1(wx.Panel):
           grass.run_command('g.region', rast=Form1.NEXPER_FINAL+"_MW_ALL_Corridors")
                       
           os.chdir(Form1.OutDir_files_TXT)
-          grass.run_command('r.out.gdal',input=Form1.NEXPER_FINAL+"_MW_ALL_Corridors", out=Form1.NEXPER_FINAL+"_MW_ALL_Corridors.TIF",nodata=-9999,overwrite = True)                           
+          grass.run_command('r.out.gdal',input=Form1.NEXPER_FINAL+"_MW_ALL_Corridors", out=Form1.NEXPER_FINAL+"_MW_ALL_Corridors.TIF",nodata=-9999)                           
           d= wx.MessageDialog( self," Finish"
                                ,"", wx.OK)
           
