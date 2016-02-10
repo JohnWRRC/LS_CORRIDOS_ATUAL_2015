@@ -254,7 +254,8 @@ class Form1(wx.Panel):
         
         
         
-     
+        Form1.ChecktTry=True
+        
         Form1.var_source_x_b_int=0.0
         Form1.var_source_y_b_int=0.0
         Form1.var_target_x_b_int=0.0
@@ -273,6 +274,7 @@ class Form1(wx.Panel):
         Form1.frag_list2=''
         Form1.selct=''   
         Form1.defaultsize_moviwin_allcor=7
+        Form1.txtxLog=''
         #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
         #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#        
         #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -691,8 +693,8 @@ class Form1(wx.Panel):
       
 
         if event.GetId()==10:   #10==START
-                   
-          
+                
+          Form1.txtxLog=open("")
          
           
           self.logger.AppendText("Checking the list \n")
@@ -823,30 +825,57 @@ class Form1(wx.Panel):
             self.logger.AppendText(" suing pair: \n"+Form1.S1FORMAT+'&'+Form1.T1FORMAT+ '\n')  
             Form1.S1=(int(str(Form1.S1)))
             Form1.T1=(int(str(Form1.T1)))
-            Form1.form_02='source=if('+Form1.OutArqST+'!='+`Form1.S1`+',null(),'+`Form1.S1`+ ')'
-            Form1.form_03='target=if('+Form1.OutArqST+'!='+`Form1.T1`+',null(),'+`Form1.T1`+ ')'
             
+            
+            while Form1.ChecktTry==True:
+              try:
+                Form1.form_02='source=if('+Form1.OutArqST+'!='+`Form1.S1`+',null(),'+`Form1.S1`+ ')'
+                grass.mapcalc(Form1.form_02, overwrite = True, quiet = True)
+                Form1.ChecktTry=False
+              except:
+                print ("Error def create raster source...")
+                Form1.ChecktTry=True
+                
+                
+                
+            Form1.ChecktTry=True
+            while Form1.ChecktTry==True:
+              try:
+                Form1.form_03='target=if('+Form1.OutArqST+'!='+`Form1.T1`+',null(),'+`Form1.T1`+ ')'
+                grass.mapcalc(Form1.form_03, overwrite = True, quiet = True)
+                Form1.ChecktTry=False
+              except:
+                print ("Error def create raster target...")
+                Form1.ChecktTry=True
+                
+            Form1.ChecktTry=True
             os.chdir(Form1.OutDir_files_TXT)
-            grass.mapcalc(Form1.form_02, overwrite = True, quiet = True)
-            grass.mapcalc(Form1.form_03, overwrite = True, quiet = True)
+           
+            
             
             
             grass.run_command('g.region', rast=Form1.OutArqST,verbose=False)
             
-            grass.run_command('r.to.vect', input='source', out='source_shp', type='area',verbose=False, overwrite = True ) 
-            grass.run_command('r.to.vect', input='target', out='target_shp', type='area',verbose=False, overwrite = True ) 
-            grass.run_command ('v.db.addcolumn', map='source_shp', columns='x double precision,y double precision', overwrite = True)
-            grass.run_command ('v.db.addcolumn', map='target_shp', columns='x double precision,y double precision', overwrite = True)
+            while Form1.ChecktTry==True:
+              try:
+                grass.run_command('r.to.vect', input='source', out='source_shp', type='area',verbose=False, overwrite = True ) 
+                grass.run_command('r.to.vect', input='target', out='target_shp', type='area',verbose=False, overwrite = True ) 
+                grass.run_command ('v.db.addcolumn', map='source_shp', columns='x double precision,y double precision', overwrite = True)
+                grass.run_command ('v.db.addcolumn', map='target_shp', columns='x double precision,y double precision', overwrite = True)
             
-            grass.read_command ('v.to.db', map='source_shp', option='coor', columns="x,y", overwrite = True)
-            grass.read_command ('v.to.db', map='target_shp', option='coor', columns="x,y", overwrite = True)
+                grass.read_command ('v.to.db', map='source_shp', option='coor', columns="x,y", overwrite = True)
+                grass.read_command ('v.to.db', map='target_shp', option='coor', columns="x,y", overwrite = True)
+                
+                Form1.var_source_x_b=grass.vector_db_select('source_shp', columns = 'x')['values'][1][0]
+                Form1.var_source_y_b=grass.vector_db_select('source_shp', columns = 'y')['values'][1][0]
             
-            Form1.var_source_x_b=grass.vector_db_select('source_shp', columns = 'x')['values'][1][0]
-            Form1.var_source_y_b=grass.vector_db_select('source_shp', columns = 'y')['values'][1][0]
-            
-            Form1.var_target_x_b=grass.vector_db_select('target_shp', columns = 'x')['values'][1][0]
-            Form1.var_target_y_b=grass.vector_db_select('target_shp', columns = 'y')['values'][1][0]
-            
+                Form1.var_target_x_b=grass.vector_db_select('target_shp', columns = 'x')['values'][1][0]
+                Form1.var_target_y_b=grass.vector_db_select('target_shp', columns = 'y')['values'][1][0]
+                Form1.ChecktTry=False
+              except:
+                Form1.ChecktTry=True
+                print ("Error def rastr...")
+                
             
             Form1.var_source_x_b_int=float(Form1.var_source_x_b)
             Form1.var_source_y_b_int=float(Form1.var_source_y_b)
@@ -895,66 +924,80 @@ class Form1(wx.Panel):
                 grass.mapcalc(Form1.form_08, overwrite = True, quiet = True)  
                 grass.run_command('g.region',rast='mapa_custo')              
                 c=i+1
-                
                 ##y=x/2
                 self.logger.AppendText('=======> runing :'+`c`+ '\n' )
+                
                 grass.run_command('r.mask',raster='source')
                 grass.run_command('g.region', vect='source_shp',verbose=False,overwrite = True)
-                grass.run_command('v.random', output='temp_point1_s',n=30,overwrite = True)
-                grass.run_command('v.select',ainput='temp_point1_s',binput='source_shp',output='temp_point2_s',operator='overlap',overwrite = True)
-                grass.run_command('v.db.addtable', map='temp_point2_s',columns="temp double precision")
-                grass.run_command('v.db.connect',flags='p',map='temp_point2_s')
                 
-                Form1.frag_list2=grass.vector_db_select('temp_point2_s', columns = 'cat')['values']
-                Form1.frag_list2=list(Form1.frag_list2)
-                Form1.selct="cat="+`Form1.frag_list2[0]`
-                grass.run_command('v.extract',input='temp_point2_s',output='pnts_aleat_S',where=Form1.selct,overwrite = True)
-                grass.run_command('r.mask',flags='r')
+                Form1.ChecktTry=True
+                while Form1.ChecktTry==True:
+                  grass.run_command('v.random', output='temp_point1_s',n=30,overwrite = True)
+                  grass.run_command('v.select',ainput='temp_point1_s',binput='source_shp',output='temp_point2_s',operator='overlap',overwrite = True)
+                  grass.run_command('v.db.addtable', map='temp_point2_s',columns="temp double precision")
+                  grass.run_command('v.db.connect',flags='p',map='temp_point2_s')
+                  Form1.frag_list2=grass.vector_db_select('temp_point2_s', columns = 'cat')['values']
+                  Form1.frag_list2=list(Form1.frag_list2)
+                  Form1.selct="cat="+`Form1.frag_list2[0]`
+                  grass.run_command('v.extract',input='temp_point2_s',output='pnts_aleat_S',where=Form1.selct,overwrite = True)
+                  if len(Form1.frag_list2)>0:
+                    Form1.ChecktTry=False
+                  else:
+                    Form1.ChecktTry=True
+                    
                 
                 #
+                grass.run_command('r.mask',flags='r')
                 grass.run_command('r.mask',raster='target')
                 grass.run_command('g.region', vect='target_shp',verbose=False,overwrite = True)
+                Form1.ChecktTry=True
+                while Form1.ChecktTry==True:
+                  grass.run_command('v.random', output='temp_point1_t',n=30 ,overwrite = True)
+                  grass.run_command('v.select',ainput='temp_point1_t',binput='target_shp',output='temp_point2_t',operator='overlap',overwrite = True)
+                  grass.run_command('v.db.addtable', map='temp_point2_t',columns="temp double precision")
+                  grass.run_command('v.db.connect',flags='p',map='temp_point2_t')
                 
-                grass.run_command('v.random', output='temp_point1_t',n=30 ,overwrite = True)
-                grass.run_command('v.select',ainput='temp_point1_t',binput='target_shp',output='temp_point2_t',operator='overlap',overwrite = True)
-                grass.run_command('v.db.addtable', map='temp_point2_t',columns="temp double precision")
-                grass.run_command('v.db.connect',flags='p',map='temp_point2_t')
-              
-                Form1.frag_list2=grass.vector_db_select('temp_point2_t', columns = 'cat')['values']
-                Form1.frag_list2=list(Form1.frag_list2)
-                Form1.selct="cat="+`Form1.frag_list2[0]`                
-                grass.run_command('v.extract',input='temp_point2_t',output='pnts_aleat_T',where=Form1.selct,overwrite = True)            
-              
+                  Form1.frag_list2=grass.vector_db_select('temp_point2_t', columns = 'cat')['values']
+                  Form1.frag_list2=list(Form1.frag_list2)
+                  Form1.selct="cat="+`Form1.frag_list2[0]`                
+                  grass.run_command('v.extract',input='temp_point2_t',output='pnts_aleat_T',where=Form1.selct,overwrite = True)  
+                  if len(Form1.frag_list2)>0:
+                    Form1.ChecktTry=False
+                  else:
+                    Form1.ChecktTry=True                  
+
               
                 
                 grass.run_command('r.mask',flags='r')
-                  
                 grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
-                Form1.form_05='corredores_aux=mapa_corredores'
-                  
-                grass.mapcalc(Form1.form_05, overwrite = True, quiet = True)
                 
-                Form1.form_06="aleat=rand(1,100)"
-                grass.mapcalc(Form1.form_06,seed=random.randint(1, 10000),overwrite = True, quiet = True)
-                
-                Form1.form_06="aleat2=aleat/100.0*"+`Form1.ruido_float`
-                grass.mapcalc(Form1.form_06, overwrite = True, quiet = True)            
-                
-                Form1.form_07='custo_aux=mapa_custo*aleat2'
-                grass.mapcalc(Form1.form_07, overwrite = True, quiet = True)    
-            
-                
-                
-               
-                  
-                grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False) 
-                grass.run_command('r.cost', flags='k', input='custo_aux', output='custo_aux_cost', start_points='pnts_aleat_S', stop_points='pnts_aleat_T',overwrite = True)
-                grass.run_command('r.drain', input='custo_aux_cost', output='custo_aux_cost_drain', start_points='pnts_aleat_T', overwrite = True)
-                grass.run_command('r.series',input='corredores_aux,custo_aux_cost_drain', output='mapa_corredores', method='sum',overwrite = True)
+                Form1.ChecktTry=True  
+                while Form1.ChecktTry==True:
+                  try:
+                    Form1.form_05='corredores_aux=mapa_corredores'
+                    grass.mapcalc(Form1.form_05, overwrite = True, quiet = True)
+                    Form1.ChecktTry=False
+                  except:
+                    Form1.ChecktTry=True
+                    
+                  Form1.ChecktTry=True
+                  while Form1.ChecktTry==True:
+                    try:
+                      Form1.form_06="aleat=rand(1,100)"
+                      grass.mapcalc(Form1.form_06,seed=random.randint(1, 10000),overwrite = True, quiet = True)
+                      Form1.form_06="aleat2=aleat/100.0*"+`Form1.ruido_float`
+                      grass.mapcalc(Form1.form_06, overwrite = True, quiet = True) 
+                      Form1.form_07='custo_aux=mapa_custo*aleat2'
+                      grass.mapcalc(Form1.form_07, overwrite = True, quiet = True)  
+                      grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False) 
+                      grass.run_command('r.cost', flags='k', input='custo_aux', output='custo_aux_cost', start_points='pnts_aleat_S', stop_points='pnts_aleat_T',overwrite = True)
+                      grass.run_command('r.drain', input='custo_aux_cost', output='custo_aux_cost_drain', start_points='pnts_aleat_T', overwrite = True)
+                      grass.run_command('r.series',input='corredores_aux,custo_aux_cost_drain', output='mapa_corredores', method='sum',overwrite = True)
+                      Form1.ChecktTry=False
+                    except:
+                      Form1.ChecktTry=True
+                    
                 Form1.form_09='custo_aux_cost_drain_sum=custo_aux_cost_drain*'+Form1.listafinal[0]
-                
-                
-                
                 grass.mapcalc(Form1.form_09, overwrite = True, quiet = True)  
                
                 
@@ -1016,8 +1059,7 @@ class Form1(wx.Panel):
                 Form1.linha=""
                 
                
-                Form1.outline1='000000'+`c`
-                
+                Form1.outline1='000000'+`c`  
                 Form1.outline1=Form1.outline1[-3:]
                 Form1.outline1=Form1.mapa_corredores_sem0+"_SM_"+Form1.outline1
                 grass.run_command('g.region',rast='custo_aux_cost_drain')

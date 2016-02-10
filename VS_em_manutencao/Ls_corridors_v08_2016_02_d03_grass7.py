@@ -19,6 +19,7 @@ import numpy as np
 
 
 
+
 ID_ABOUT=101
 ID_IBMCFG=102
 ID_EXIT=110
@@ -47,6 +48,24 @@ def selecdirectori():
     a=(path)
   
   return a
+def defineregion(mapa1,mapa2,influensprocess):
+  grass.run_command("g.region",vect=mapa1+","+mapa2)
+  dicregion = grass.region()
+  n=float(dicregion['n'])
+  s=float(dicregion['s'])
+  e=float(dicregion['e'])
+  w=float(dicregion['w'])
+  
+  
+  n=n+influensprocess
+  s=s-influensprocess
+  e=e+influensprocess
+  w=w-influensprocess
+  
+  
+  
+  grass.run_command("g.region",n=n,e=e,s=s,w=w)
+
 
 
 
@@ -229,7 +248,7 @@ class Form1(wx.Panel):
         Form1.startscale='100'
         
         Form1.escalafina=0
-        Form1.esc=300
+        Form1.esc=100
         Form1.res=''
         Form1.res2=[]
         Form1.res3=''
@@ -254,7 +273,8 @@ class Form1(wx.Panel):
         
         
         
-     
+        Form1.ChecktTry=True
+        
         Form1.var_source_x_b_int=0.0
         Form1.var_source_y_b_int=0.0
         Form1.var_target_x_b_int=0.0
@@ -273,6 +293,56 @@ class Form1(wx.Panel):
         Form1.frag_list2=''
         Form1.selct=''   
         Form1.defaultsize_moviwin_allcor=7
+        ###
+        Form1.txt_log=''
+        #start time
+        Form1.time = 0 # INSTANCE
+        Form1.day_start=0
+        Form1.month_start=0
+        Form1.year_start=0
+        Form1.hour_start=0 # GET START Form1.hour
+        Form1.minuts_start=0 #GET START Form1.minuts
+        Form1.second_start=0 #GET START
+        
+        
+        
+        #end time
+        Form1.time = '' # INSTANCE
+        Form1.day_end=0
+        Form1.month_end=0
+        Form1.year_end=0
+        Form1.hour_end=0 # GET end Form1.hour
+        Form1.minuts_end=0 #GET end Form1.minuts
+        Form1.second_end=0 #GET end Form1.seconds  
+        
+        Form1.header_log=''
+  
+        Form1.time = 0 # INSTANCE
+        Form1.day=0
+        Form1.month=0
+        Form1.year=0
+        Form1.hour=0 # GET START Form1.hour
+        Form1.minuts=0 #GET START Form1.minuts
+        Form1.second=0 #GET START             
+        
+        Form1.time = 0 # INSTANCE
+        Form1.day_now=0
+        Form1.month_now=0
+        Form1.year_now=0
+        Form1.hour_now=0 # GET START Form1.hour
+        Form1.minuts_now=0 #GET START Form1.minuts
+        Form1.second_now=0 #GET START      
+        Form1.listErrorLog=[]
+        Form1.diference_time=''
+        
+        Form1.n=''
+        Form1.s=''
+        Form1.e=''
+        Form1.w=''
+        Form1.dicregion=''
+        Form1.influensprocess=10000
+        
+        
         #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
         #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#        
         #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -691,7 +761,7 @@ class Form1(wx.Panel):
       
 
         if event.GetId()==10:   #10==START
-                   
+                
           
          
           
@@ -740,7 +810,35 @@ class Form1(wx.Panel):
           
           retCode=d.ShowModal() # Shows 
           # finally destroy it when finished.
-          d.Close(True)             
+          d.Close(True)  
+          
+          #start time
+          #start time
+          Form1.time = datetime.now() # INSTANCE
+          Form1.day_start=Form1.time.day
+          Form1.month_start=Form1.time.month
+          Form1.year_start=Form1.time.year
+          Form1.hour_start=Form1.time.hour # GET START Form1.hour
+          Form1.minuts_start=Form1.time.minute #GET START Form1.minuts
+          Form1.second_start=Form1.time.second #GET START              
+          
+          
+          Form1.time = datetime.now() # INSTANCE
+          Form1.day=Form1.time.day
+          Form1.month=Form1.time.month
+          Form1.year=Form1.time.year
+          Form1.hour=Form1.time.hour # GET START Form1.hour
+          Form1.minuts=Form1.time.minute #GET START Form1.minuts
+          Form1.second=Form1.time.second #GET START    
+          
+          
+          
+          os.chdir(Form1.OutDir_files_TXT)
+          
+          Form1.header_log="_____Log__Year_"+`Form1.year`+"-Month"+`Form1.month`+"-Day_"+`Form1.day`+"_Time_"+`Form1.hour`+"_"+`Form1.minuts`+"_"+`Form1.second`
+          Form1.txt_log=open(Form1.header_log+".txt","w")       
+          Form1.txt_log.write("Start time       : Year "+`Form1.year_start`+"-Month "+`Form1.month_start`+"-Day "+`Form1.day_start`+" ---- time: "+`Form1.hour_start`+":"+`Form1.minuts_start`+":"+`Form1.second_start`+"\n")
+          
           
           Form1.S1=""
           Form1.T1=""
@@ -808,54 +906,81 @@ class Form1(wx.Panel):
           #patch_id_list       
           Form1.patch_id_list=map(int,Form1.patch_id_list)
           while (len(Form1.patch_id_list)>1):
-            Form1.S1=Form1.patch_id_list[0]
-            Form1.T1=Form1.patch_id_list[1]
-            Form1.S1FORMAT='000000'+`Form1.S1`
-            Form1.S1FORMAT=Form1.S1FORMAT[-5:]
-            Form1.T1FORMAT='000000'+`Form1.T1`
-            Form1.T1FORMAT=Form1.T1FORMAT[-5:]
-          
-            del Form1.patch_id_list[0:2]
-            
-            Form1.PAISGEM='EXPERIMENTO'
-            Form1.ARQSAIDA=Form1.PAISGEM+'_s'+Form1.S1FORMAT+'_t'+Form1.T1FORMAT
-              
-            self.logger.AppendText(" suing pair: \n"+Form1.S1FORMAT+'&'+Form1.T1FORMAT+ '\n')  
-            Form1.S1=(int(str(Form1.S1)))
-            Form1.T1=(int(str(Form1.T1)))
-            Form1.form_02='source=if('+Form1.OutArqST+'!='+`Form1.S1`+',null(),'+`Form1.S1`+ ')'
-            Form1.form_03='target=if('+Form1.OutArqST+'!='+`Form1.T1`+',null(),'+`Form1.T1`+ ')'
-            
+            Form1.ChecktTry=True
             os.chdir(Form1.OutDir_files_TXT)
-            grass.mapcalc(Form1.form_02, overwrite = True, quiet = True)
-            grass.mapcalc(Form1.form_03, overwrite = True, quiet = True)
+            while Form1.ChecktTry==True:
+              try:
+                Form1.S1=Form1.patch_id_list[0]
+                Form1.T1=Form1.patch_id_list[1]
+                Form1.S1FORMAT='000000'+`Form1.S1`
+                Form1.S1FORMAT=Form1.S1FORMAT[-5:]
+                Form1.T1FORMAT='000000'+`Form1.T1`
+                Form1.T1FORMAT=Form1.T1FORMAT[-5:]
+              
+                del Form1.patch_id_list[0:2]
+                Form1.PAISGEM='EXPERIMENTO'
+                Form1.ARQSAIDA=Form1.PAISGEM+'_s'+Form1.S1FORMAT+'_t'+Form1.T1FORMAT                  
+                self.logger.AppendText(" suing pair: \n"+Form1.S1FORMAT+'&'+Form1.T1FORMAT+ '\n')  
+                Form1.S1=(int(str(Form1.S1)))
+                Form1.T1=(int(str(Form1.T1)))  
+                Form1.form_02='source=if('+Form1.OutArqST+'!='+`Form1.S1`+',null(),'+`Form1.S1`+ ')'
+                grass.mapcalc(Form1.form_02, overwrite = True, quiet = True)
+                Form1.form_03='target=if('+Form1.OutArqST+'!='+`Form1.T1`+',null(),'+`Form1.T1`+ ')'
+                grass.mapcalc(Form1.form_03, overwrite = True, quiet = True)
+                
+                grass.run_command('g.region', rast=Form1.OutArqST,verbose=False)
+                grass.run_command('r.to.vect', input='source', out='source_shp', type='area',verbose=False, overwrite = True ) 
+                grass.run_command('r.to.vect', input='target', out='target_shp', type='area',verbose=False, overwrite = True ) 
+                grass.run_command ('v.db.addcolumn', map='source_shp', columns='x double precision,y double precision', overwrite = True)
+                grass.run_command ('v.db.addcolumn', map='target_shp', columns='x double precision,y double precision', overwrite = True)
             
+                grass.read_command ('v.to.db', map='source_shp', option='coor', columns="x,y", overwrite = True)
+                grass.read_command ('v.to.db', map='target_shp', option='coor', columns="x,y", overwrite = True)
+                
+                Form1.var_source_x_b=grass.vector_db_select('source_shp', columns = 'x')['values'][1][0]
+                Form1.var_source_y_b=grass.vector_db_select('source_shp', columns = 'y')['values'][1][0]
             
-            grass.run_command('g.region', rast=Form1.OutArqST,verbose=False)
-            
-            grass.run_command('r.to.vect', input='source', out='source_shp', type='area',verbose=False, overwrite = True ) 
-            grass.run_command('r.to.vect', input='target', out='target_shp', type='area',verbose=False, overwrite = True ) 
-            grass.run_command ('v.db.addcolumn', map='source_shp', columns='x double precision,y double precision', overwrite = True)
-            grass.run_command ('v.db.addcolumn', map='target_shp', columns='x double precision,y double precision', overwrite = True)
-            
-            grass.read_command ('v.to.db', map='source_shp', option='coor', columns="x,y", overwrite = True)
-            grass.read_command ('v.to.db', map='target_shp', option='coor', columns="x,y", overwrite = True)
-            
-            Form1.var_source_x_b=grass.vector_db_select('source_shp', columns = 'x')['values'][1][0]
-            Form1.var_source_y_b=grass.vector_db_select('source_shp', columns = 'y')['values'][1][0]
-            
-            Form1.var_target_x_b=grass.vector_db_select('target_shp', columns = 'x')['values'][1][0]
-            Form1.var_target_y_b=grass.vector_db_select('target_shp', columns = 'y')['values'][1][0]
-            
+                Form1.var_target_x_b=grass.vector_db_select('target_shp', columns = 'x')['values'][1][0]
+                Form1.var_target_y_b=grass.vector_db_select('target_shp', columns = 'y')['values'][1][0]
+                Form1.ChecktTry=False
+                
+                #finaliza caso a lista esteja com valores invalidos no final
+                
+                  
+              except:
+                Form1.ChecktTry=True
+                print ("Error defRasterize ST, Add col, Get x corrd ...")
+                Form1.time = datetime.now() # INSTANCE
+                Form1.day_now=Form1.time.day
+                Form1.month_now=Form1.time.month
+                Form1.year_now=Form1.time.year
+                Form1.hour_now=Form1.time.hour # GET START Form1.hour
+                Form1.minuts_now=Form1.time.minute #GET START Form1.minuts
+                Form1.second_now=Form1.time.second #GET START                  
+                Form1.listErrorLog.append("[Error ->-> :] < - Rasterize ST, Add col, Get x corrd : "+Form1.ARQSAIDA+" - > ---"+`Form1.year_now`+"-"+ `Form1.month_now` + "-"+ `Form1.day_now`+" --- time : "+`Form1.hour_now `+":"+`Form1.second_now`)
+                Form1.listErrorLog.append("[Error ->-> :] < -Skip STS: "+Form1.ARQSAIDA)
+                if len(Form1.patch_id_list)==0:
+                  dForm1.txt_log.close() 
+                  d= wx.MessageDialog( self," Error STs invalid , check please!"
+                               ,"", wx.OK)
+          
+                  retCode=d.ShowModal() # Shows 
+                  d.Close(True)         
+                  break                
             
             Form1.var_source_x_b_int=float(Form1.var_source_x_b)
             Form1.var_source_y_b_int=float(Form1.var_source_y_b)
             Form1.var_target_x_b_int=float(Form1.var_target_x_b)
             Form1.var_target_y_b_int=float(Form1.var_target_y_b)
             
+           
+              
+            defineregion("source_shp","target_shp", Form1.influensprocess) 
+             
             
             
-            grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
+            
+            
             
             
            
@@ -889,72 +1014,120 @@ class Form1(wx.Panel):
             
             cont=0
             for i in range(Form1.Nsimulations):
-                
+                defineregion("source_shp","target_shp", Form1.influensprocess) 
                 Form1.form_08='mapa_custo='+Form1.listafinal[cont]
-               
                 grass.mapcalc(Form1.form_08, overwrite = True, quiet = True)  
-                grass.run_command('g.region',rast='mapa_custo')              
+                
+                grass.mapcalc("x = 0", overwrite = True, quiet = True) 
+                
+                      
                 c=i+1
                 
-                ##y=x/2
                 self.logger.AppendText('=======> runing :'+`c`+ '\n' )
+                
                 grass.run_command('r.mask',raster='source')
                 grass.run_command('g.region', vect='source_shp',verbose=False,overwrite = True)
-                grass.run_command('v.random', output='temp_point1_s',n=30,overwrite = True)
-                grass.run_command('v.select',ainput='temp_point1_s',binput='source_shp',output='temp_point2_s',operator='overlap',overwrite = True)
-                grass.run_command('v.db.addtable', map='temp_point2_s',columns="temp double precision")
-                grass.run_command('v.db.connect',flags='p',map='temp_point2_s')
                 
-                Form1.frag_list2=grass.vector_db_select('temp_point2_s', columns = 'cat')['values']
-                Form1.frag_list2=list(Form1.frag_list2)
-                Form1.selct="cat="+`Form1.frag_list2[0]`
-                grass.run_command('v.extract',input='temp_point2_s',output='pnts_aleat_S',where=Form1.selct,overwrite = True)
-                grass.run_command('r.mask',flags='r')
+                Form1.ChecktTry=True
+                while Form1.ChecktTry==True:
+                  try:
+                    grass.run_command('v.random', output='temp_point1_s',n=30,overwrite = True)
+                    grass.run_command('v.select',ainput='temp_point1_s',binput='source_shp',output='temp_point2_s',operator='overlap',overwrite = True)
+                    grass.run_command('v.db.addtable', map='temp_point2_s',columns="temp double precision")
+                    grass.run_command('v.db.connect',flags='p',map='temp_point2_s')
+                    Form1.frag_list2=grass.vector_db_select('temp_point2_s', columns = 'cat')['values']
+                    Form1.frag_list2=list(Form1.frag_list2)
+                    Form1.selct="cat="+`Form1.frag_list2[0]`
+                    grass.run_command('v.extract',input='temp_point2_s',output='pnts_aleat_S',where=Form1.selct,overwrite = True)
+                    if len(Form1.frag_list2)>0:
+                      Form1.ChecktTry=False
+                    else:
+                      Form1.ChecktTry=True
+                  except:
+                    Form1.ChecktTry=True
+                    Form1.time = datetime.now() # INSTANCE
+                    Form1.day_now=Form1.time.day
+                    Form1.month_now=Form1.time.month
+                    Form1.year_now=Form1.time.year
+                    Form1.hour_now=Form1.time.hour # GET START Form1.hour
+                    Form1.minuts_now=Form1.time.minute #GET START Form1.minuts
+                    Form1.second_now=Form1.time.second #GET START                      
+                    Form1.listErrorLog.append("[Error ->-> :] < - randomize points source : "+Form1.ARQSAIDA+" - > ---"+`Form1.year_now`+"-"+ `Form1.month_now` + "-"+ `Form1.day_now`+" --- time : "+`Form1.hour_now `+":"+`Form1.second_now`)
+                    
                 
                 #
+                grass.run_command('r.mask',flags='r')
                 grass.run_command('r.mask',raster='target')
                 grass.run_command('g.region', vect='target_shp',verbose=False,overwrite = True)
+                Form1.ChecktTry=True
+                while Form1.ChecktTry==True:
+                  try:
+                    grass.run_command('v.random', output='temp_point1_t',n=30 ,overwrite = True)
+                    grass.run_command('v.select',ainput='temp_point1_t',binput='target_shp',output='temp_point2_t',operator='overlap',overwrite = True)
+                    grass.run_command('v.db.addtable', map='temp_point2_t',columns="temp double precision")
+                    grass.run_command('v.db.connect',flags='p',map='temp_point2_t')
                 
-                grass.run_command('v.random', output='temp_point1_t',n=30 ,overwrite = True)
-                grass.run_command('v.select',ainput='temp_point1_t',binput='target_shp',output='temp_point2_t',operator='overlap',overwrite = True)
-                grass.run_command('v.db.addtable', map='temp_point2_t',columns="temp double precision")
-                grass.run_command('v.db.connect',flags='p',map='temp_point2_t')
-              
-                Form1.frag_list2=grass.vector_db_select('temp_point2_t', columns = 'cat')['values']
-                Form1.frag_list2=list(Form1.frag_list2)
-                Form1.selct="cat="+`Form1.frag_list2[0]`                
-                grass.run_command('v.extract',input='temp_point2_t',output='pnts_aleat_T',where=Form1.selct,overwrite = True)            
-              
+                    Form1.frag_list2=grass.vector_db_select('temp_point2_t', columns = 'cat')['values']
+                    Form1.frag_list2=list(Form1.frag_list2)
+                    Form1.selct="cat="+`Form1.frag_list2[0]`                
+                    grass.run_command('v.extract',input='temp_point2_t',output='pnts_aleat_T',where=Form1.selct,overwrite = True)  
+                    if len(Form1.frag_list2)>0:
+                      Form1.ChecktTry=False
+                    else:
+                      Form1.ChecktTry=True
+                  except:
+                    Form1.ChecktTry=True
+                    Form1.time = datetime.now() # INSTANCE
+                    Form1.day_now=Form1.time.day
+                    Form1.month_now=Form1.time.month
+                    Form1.year_now=Form1.time.year
+                    Form1.hour_now=Form1.time.hour # GET START Form1.hour
+                    Form1.minuts_now=Form1.time.minute #GET START Form1.minuts
+                    Form1.second_now=Form1.time.second #GET START                      
+                    Form1.listErrorLog.append("[Error ->-> :] < -  randomize points target : "+Form1.ARQSAIDA+" - > ---"+`Form1.year_now`+"-"+ `Form1.month_now` + "-"+ `Form1.day_now`+" --- time : "+`Form1.hour_now `+":"+`Form1.second_now`)
+
               
                 
                 grass.run_command('r.mask',flags='r')
-                  
-                grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
-                Form1.form_05='corredores_aux=mapa_corredores'
-                  
-                grass.mapcalc(Form1.form_05, overwrite = True, quiet = True)
+                #grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
+                defineregion("source_shp","target_shp", Form1.influensprocess)  
                 
-                Form1.form_06="aleat=rand(1,100)"
-                grass.mapcalc(Form1.form_06,seed=random.randint(1, 10000),overwrite = True, quiet = True)
-                
-                Form1.form_06="aleat2=aleat/100.0*"+`Form1.ruido_float`
-                grass.mapcalc(Form1.form_06, overwrite = True, quiet = True)            
-                
-                Form1.form_07='custo_aux=mapa_custo*aleat2'
-                grass.mapcalc(Form1.form_07, overwrite = True, quiet = True)    
-            
-                
-                
-               
-                  
-                grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False) 
-                grass.run_command('r.cost', flags='k', input='custo_aux', output='custo_aux_cost', start_points='pnts_aleat_S', stop_points='pnts_aleat_T',overwrite = True)
-                grass.run_command('r.drain', input='custo_aux_cost', output='custo_aux_cost_drain', start_points='pnts_aleat_T', overwrite = True)
-                grass.run_command('r.series',input='corredores_aux,custo_aux_cost_drain', output='mapa_corredores', method='sum',overwrite = True)
+                Form1.ChecktTry=True  
+                while Form1.ChecktTry==True:
+                  try:
+                    Form1.form_05='corredores_aux=mapa_corredores'
+                    grass.mapcalc(Form1.form_05, overwrite = True, quiet = True)
+                    Form1.ChecktTry=False
+                  except:
+                    Form1.ChecktTry=True
+                    
+                  Form1.ChecktTry=True
+                  while Form1.ChecktTry==True:
+                    try:
+                      Form1.form_06="aleat=rand(1,100)"
+                      grass.mapcalc(Form1.form_06,seed=random.randint(1, 10000),overwrite = True, quiet = True)
+                      Form1.form_06="aleat2=aleat/100.0*"+`Form1.ruido_float`
+                      grass.mapcalc(Form1.form_06, overwrite = True, quiet = True) 
+                      Form1.form_07='custo_aux=mapa_custo*aleat2'
+                      grass.mapcalc(Form1.form_07, overwrite = True, quiet = True)  
+                      defineregion("source_shp","target_shp", Form1.influensprocess) 
+                      grass.run_command('r.cost', flags='k', input='custo_aux', output='custo_aux_cost', start_points='pnts_aleat_S', stop_points='pnts_aleat_T',overwrite = True)
+                      grass.run_command('r.drain', input='custo_aux_cost', output='custo_aux_cost_drain', start_points='pnts_aleat_T', overwrite = True)
+                      grass.run_command('r.series',input='corredores_aux,custo_aux_cost_drain', output='mapa_corredores', method='sum',overwrite = True)
+                      Form1.ChecktTry=False
+                    except:
+                      Form1.ChecktTry=True
+                      Form1.time = datetime.now() # INSTANCE
+                      Form1.day_now=Form1.time.day
+                      Form1.month_now=Form1.time.month
+                      Form1.year_now=Form1.time.year
+                      Form1.hour_now=Form1.time.hour # GET START Form1.hour
+                      Form1.minuts_now=Form1.time.minute #GET START Form1.minuts
+                      Form1.second_now=Form1.time.second #GET START                       
+                      Form1.listErrorLog.append("[Error ->-> :] < - Methods:aleat, aleat2, custo_aux, r.cost, r.drain, r.series  : "+Form1.ARQSAIDA+" - > ---"+`Form1.year_now`+"-"+ `Form1.month_now` + "-"+ `Form1.day_now`+" --- Time : "+`Form1.hour_now `+":"+`Form1.second_now`)
+                      
+                    
                 Form1.form_09='custo_aux_cost_drain_sum=custo_aux_cost_drain*'+Form1.listafinal[0]
-                
-                
-                
                 grass.mapcalc(Form1.form_09, overwrite = True, quiet = True)  
                
                 
@@ -969,7 +1142,9 @@ class Form1(wx.Panel):
                 
                 
                 #print 
-                grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
+                #grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
+                defineregion("source_shp","target_shp", Form1.influensprocess) 
+                
                 Form1.form_10=Form1.mapa_corredores_sem0+'=if(mapa_corredores==0,null(),mapa_corredores)'
                 grass.mapcalc(Form1.form_10, overwrite = True, quiet = True)
                 
@@ -1016,8 +1191,7 @@ class Form1(wx.Panel):
                 Form1.linha=""
                 
                
-                Form1.outline1='000000'+`c`
-                
+                Form1.outline1='000000'+`c`  
                 Form1.outline1=Form1.outline1[-3:]
                 Form1.outline1=Form1.mapa_corredores_sem0+"_SM_"+Form1.outline1
                 grass.run_command('g.region',rast='custo_aux_cost_drain')
@@ -1044,30 +1218,51 @@ class Form1(wx.Panel):
             
             
             
-            grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
-          
-          grass.run_command('r.series',input=Form1.listExport,out=Form1.NEXPER_FINAL+'CorrJoin',method="maximum")
-          
-          
-          grass.run_command('g.region', rast=Form1.NEXPER_FINAL+'CorrJoin',verbose=False)
-          grass.run_command('r.neighbors',input=Form1.NEXPER_FINAL+'CorrJoin',out=Form1.NEXPER_FINAL+"_LargeZone_Corridors", method='average',size=Form1.defaultsize_moviwin_allcor,overwrite = True)
+            #grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
+          if len(Form1.listExport)>1:
+            grass.run_command('r.series',input=Form1.listExport,out=Form1.NEXPER_FINAL+'CorrJoin',method="maximum")
+            grass.run_command('g.region', rast=Form1.NEXPER_FINAL+'CorrJoin',verbose=False)
+            grass.run_command('r.neighbors',input=Form1.NEXPER_FINAL+'CorrJoin',out=Form1.NEXPER_FINAL+"_LargeZone_Corridors", method='average',size=Form1.defaultsize_moviwin_allcor,overwrite = True)    
+            grass.run_command('r.out.gdal',input=Form1.NEXPER_FINAL+"_LargeZone_Corridors", out=Form1.NEXPER_FINAL+"_LargeZone_Corridors.tif",nodata=-9999,overwrite = True)  
+            grass.run_command('r.out.gdal',input=Form1.NEXPER_FINAL+'CorrJoin', out=Form1.NEXPER_FINAL+'CorrJoin.tif',nodata=-9999,overwrite = True)            
 
-            
-          grass.run_command('g.region', rast=Form1.NEXPER_FINAL+"_LargeZone_Corridors")
+            grass.run_command('g.region', rast=Form1.NEXPER_FINAL+"_LargeZone_Corridors")
                       
           os.chdir(Form1.OutDir_files_TXT)
-          grass.run_command('r.out.gdal',input=Form1.NEXPER_FINAL+"_LargeZone_Corridors", out=Form1.NEXPER_FINAL+"_LargeZone_Corridors.tif",nodata=-9999,overwrite = True)  
-          grass.run_command('r.out.gdal',input=Form1.NEXPER_FINAL+'CorrJoin', out=Form1.NEXPER_FINAL+'CorrJoin.tif',nodata=-9999,overwrite = True)
+          
+          
+          #end time
+          Form1.time = datetime.now() # INSTANCE
+          Form1.day_end=Form1.time.day
+          Form1.month_end=Form1.time.month
+          Form1.year_end=Form1.time.year
+          Form1.hour_end=Form1.time.hour # GET end Form1.hour
+          Form1.minuts_end=Form1.time.minute #GET end Form1.minuts
+          Form1.second_end=Form1.time.second #GET end Form1.seconds
+          
+          Form1.txt_log.write("End time         : Year "+`Form1.year_end`+"-Month "+`Form1.month_end`+"-Day "+`Form1.day_end`+" ---- Time: "+`Form1.hour_end`+":"+`Form1.minuts_end`+":"+`Form1.second_end`+"\n")
+          Form1.diference_time=`Form1.month_end - Form1.month_start`+" Month - "+`abs(Form1.day_end - Form1.day_start)`+" Day - "+" Time: "+`abs(Form1.hour_end - Form1.hour_start)`+":"+`abs(Form1.minuts_end - Form1.minuts_start)`+":"+`abs(Form1.second_end - Form1.second_start)`
+          
+          Form1.txt_log.write("Processing time  : "+Form1.diference_time+"\n\n")
+          
+          
+          Form1.txt_log.write("Inputs : \n")
+          Form1.txt_log.write("	Cost Map               : "+Form1.OutArqCost+" \n")
+          Form1.txt_log.write("	Source Target Map      : "+Form1.OutArqST+" \n")
+          Form1.txt_log.write("	Variability            : "+`Form1.ruido_float`+" \n")
+          Form1.txt_log.write("	Perception of scale    : "+`Form1.esc`+" \n")
+          Form1.txt_log.write("	Number interactions M1 : "+`Form1.Nsimulations1`+" \n")
+          Form1.txt_log.write("	Number interactions M2 : "+`Form1.Nsimulations2`+"\n")
+          Form1.txt_log.write("	Number interactions M3 : "+`Form1.Nsimulations3`+"\n")
+          Form1.txt_log.write("	Number interactions M4 : "+`Form1.Nsimulations4`+"\n")    
+          
+          Form1.txt_log.write("Output location : \n")
+          Form1.txt_log.write("	"+Form1.OutDir_files_TXT+"\n\n")          
+          
+          for logERR in Form1.listErrorLog:
+            Form1.txt_log.write(logERR+"\n")
+          
+          Form1.txt_log.close() 
           d= wx.MessageDialog( self," Finish"
                                ,"", wx.OK)
           
