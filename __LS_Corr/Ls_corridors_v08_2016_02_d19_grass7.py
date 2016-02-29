@@ -303,7 +303,7 @@ class Form1(wx.Panel):
         Form1.hour_start=0 # GET START Form1.hour
         Form1.minuts_start=0 #GET START Form1.minuts
         Form1.second_start=0 #GET START
-        
+       
         
         
         #end time
@@ -341,6 +341,9 @@ class Form1(wx.Panel):
         Form1.w=''
         Form1.dicregion=''
         Form1.influensprocess=10000
+        Form1.influensprocess_boll=False
+        
+        
         
         
         #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -1090,8 +1093,12 @@ class Form1(wx.Panel):
               
                 
                 grass.run_command('r.mask',flags='r')
-                #grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
-                defineregion("source_shp","target_shp", Form1.influensprocess)  
+                
+                if Form1.influensprocess_boll:
+                  defineregion("source_shp","target_shp", Form1.influensprocess)  
+                else:
+                  grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
+                
                 
                 Form1.ChecktTry=True  
                 while Form1.ChecktTry==True:
@@ -1110,9 +1117,11 @@ class Form1(wx.Panel):
                       Form1.form_06="aleat2=aleat/100.0*"+`Form1.ruido_float`
                       grass.mapcalc(Form1.form_06, overwrite = True, quiet = True) 
                       Form1.form_07='custo_aux=mapa_custo*aleat2'
-                      grass.mapcalc(Form1.form_07, overwrite = True, quiet = True)  
+                      grass.mapcalc(Form1.form_07, overwrite = True, quiet = True)
+                      Form1.form_07='custo_aux2=if(isnull(custo_aux),10000000,custo_aux)'
+                      grass.mapcalc(Form1.form_07, overwrite = True, quiet = True)                      
                       defineregion("source_shp","target_shp", Form1.influensprocess) 
-                      grass.run_command('r.cost', flags='k', input='custo_aux', output='custo_aux_cost', start_points='pnts_aleat_S', stop_points='pnts_aleat_T',overwrite = True)
+                      grass.run_command('r.cost', flags='k', input='custo_aux2', output='custo_aux_cost', start_points='pnts_aleat_S', stop_points='pnts_aleat_T',overwrite = True)
                       grass.run_command('r.drain', input='custo_aux_cost', output='custo_aux_cost_drain', start_points='pnts_aleat_T', overwrite = True)
                       grass.run_command('r.series',input='corredores_aux,custo_aux_cost_drain', output='mapa_corredores', method='sum',overwrite = True)
                       Form1.ChecktTry=False
@@ -1136,15 +1145,18 @@ class Form1(wx.Panel):
                 Form1.x=grass.read_command('r.univar', map='custo_aux_cost_drain_sum')
                 Form1.x_b=Form1.x.split('\n')
                 Form1.x_c=str(Form1.x_b[14])
-                Form1.var_cost_sum=Form1.x_c[5:8]
+                Form1.var_cost_sum=float(Form1.x_c.replace("sum: ",""))
+                
                 
                              
                 
                 
                 
-                #print 
-                #grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
-                defineregion("source_shp","target_shp", Form1.influensprocess) 
+                 
+                if Form1.influensprocess_boll:
+                  defineregion("source_shp","target_shp", Form1.influensprocess)  
+                else:
+                  grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
                 
                 Form1.form_10=Form1.mapa_corredores_sem0+'=if(mapa_corredores==0,null(),mapa_corredores)'
                 grass.mapcalc(Form1.form_10, overwrite = True, quiet = True)
@@ -1195,6 +1207,7 @@ class Form1(wx.Panel):
                 Form1.outline1='000000'+`c`  
                 Form1.outline1=Form1.outline1[-3:]
                 Form1.outline1=Form1.mapa_corredores_sem0+"_SM_"+Form1.outline1
+                
                 grass.run_command('g.region',rast='custo_aux_cost_drain')
                 grass.run_command('r.to.vect', input='custo_aux_cost_drain', output=Form1.outline1, type='line',verbose=False, overwrite = True )
                 grass.run_command ('v.db.addcolumn', map=Form1.outline1, columns='dist double precision', overwrite = True)
@@ -1213,9 +1226,9 @@ class Form1(wx.Panel):
             grass.run_command('r.out.gdal',input=Form1.mapa_corredores_sem0, out=Form1.mapa_corredores_sem0+'.tif',nodata=-9999)
             self.logger.AppendText(" removing auxiliary files...: \n")  
             
-            grass.run_command('g.remove',type="vect",name='temp_point1_s,M2_MODE,M3_MAXIMUM,M4_AVERAGE,temp_point2_s,temp_point1_t,temp_point2_t,pnts_aleat_S,pnts_aleat_T,source_shp,target_shp,custo_aux_cost_drain_sem0_line', flags='f')
-            grass.run_command('g.remove',type="rast",name='mapa_custo,mapa_corredores,custo_aux_cost_drain,source,target,custo_aux_cost_drain_sum,custo_aux_cost_drain_sem0,custo_aux_cost,custo_aux,corredores_aux,aleat,aleat2,aleat2_Gros,aleat3,aleat_Gros,apoio1', flags='f')
-            grass.run_command('g.remove',type="rast",name='apoio2,apoio2b,apoio2c,apoio2d', flags='f')
+            #grass.run_command('g.remove',type="vect",name='temp_point1_s,M2_MODE,M3_MAXIMUM,M4_AVERAGE,temp_point2_s,temp_point1_t,temp_point2_t,pnts_aleat_S,pnts_aleat_T,source_shp,target_shp,custo_aux_cost_drain_sem0_line', flags='f')
+            #grass.run_command('g.remove',type="rast",name='mapa_custo,custo_aux2,mapa_corredores,custo_aux_cost_drain,source,target,custo_aux_cost_drain_sum,custo_aux_cost_drain_sem0,custo_aux_cost,custo_aux,corredores_aux,aleat,aleat2,aleat2_Gros,aleat3,aleat_Gros,apoio1', flags='f')
+            #grass.run_command('g.remove',type="rast",name='apoio2,apoio2b,apoio2c,apoio2d', flags='f')
             
             
             
@@ -1228,6 +1241,11 @@ class Form1(wx.Panel):
             grass.run_command('r.out.gdal',input=Form1.NEXPER_FINAL+'CorrJoin', out=Form1.NEXPER_FINAL+'CorrJoin.tif',nodata=-9999,overwrite = True)            
 
             grass.run_command('g.region', rast=Form1.NEXPER_FINAL+"_LargeZone_Corridors")
+          else:
+            grass.run_command('r.neighbors',input=Form1.mapa_corredores_sem0,out=Form1.NEXPER_FINAL+"_LargeZone_Corridors", method='average',size=Form1.defaultsize_moviwin_allcor,overwrite = True)    
+            grass.run_command('r.out.gdal',input=Form1.NEXPER_FINAL+"_LargeZone_Corridors", out=Form1.NEXPER_FINAL+"_LargeZone_Corridors.tif",nodata=-9999,overwrite = True)  
+                     
+            
                       
           os.chdir(Form1.OutDir_files_TXT)
           
