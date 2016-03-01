@@ -8,8 +8,7 @@ import re
 import time
 import math
 from datetime import tzinfo, timedelta, datetime
-import win32gui
-from win32com.shell import shell, shellcon
+
 import os
 import unicodedata
 import numpy as np
@@ -29,25 +28,46 @@ ID_ABOUT=101
 ID_IBMCFG=102
 ID_EXIT=110
 
-def selecdirectori():
-  mydocs_pidl = shell.SHGetFolderLocation (0, shellcon.CSIDL_DESKTOP, 0, 0)
-  pidl, display_name, image_list = shell.SHBrowseForFolder (
-    win32gui.GetDesktopWindow (),
-    mydocs_pidl,
-    "Select a file or folder",
-    shellcon.BIF_BROWSEINCLUDEFILES,
-    None,
-    None
-  )
-  
-  if (pidl, display_name, image_list) == (None, None, None):
-    print "Nothing selected"
-  else:
-    path = shell.SHGetPathFromIDList (pidl)
-    
-    a=(path)
-  
-  return a
+def selecdirectori_folder():
+   dialog = wx.DirDialog(None, "Select the output folder:",style=wx.DD_DEFAULT_STYLE | wx.DD_NEW_DIR_BUTTON)
+   if dialog.ShowModal() == wx.ID_OK:
+      #print ">>..................",dialog.GetPath()
+      return dialog.GetPath()
+
+def selecdirectori_importfile():
+   """
+   esse funcao permite selecionar um arquivo na pasta, limitado pelas extesoes tif e img
+   ainda ela retorna os nome do mapa de entrada com o caminho e o nome do mapa de saida
+   
+   """
+   wcd='Editor Files(*.img)|*.img|Editor Files (*tif)|*.tif'# selecao de extencoes diponiveis
+   dirDefault=os.getcwd()
+   open_dig=wx.FileDialog(None,message="Choose file",defaultDir=dirDefault,wildcard=wcd,style=wx.OPEN|wx.CHANGE_DIR) 
+   if   open_dig.ShowModal()==wx.ID_OK:
+      inprast=open_dig.GetPath() #files recebe o resultado da busca, incluindo o caminho   
+      name_rast=inprast.split("\\")
+      name_rast=name_rast[-1]
+      name_rast=name_rast.replace('.',"_")
+      inprast=inprast.replace("\\", "/")
+      print inprast, name_rast
+      return inprast,name_rast
+   
+   
+def selecdirectori_importTXT():
+   """
+   esse funcao permite selecionar um arquivo na pasta, limitado pelas extesoes tif e img
+   ainda ela retorna os nome do mapa de entrada com o caminho e o nome do mapa de saida
+   
+   """
+   wcd='Editor Files(*.txt)|*.txt'# selecao de extencoes diponiveis
+   dirDefault=os.getcwd()
+   open_dig=wx.FileDialog(None,message="Choose file",defaultDir=dirDefault,wildcard=wcd,style=wx.OPEN|wx.CHANGE_DIR) 
+   if   open_dig.ShowModal()==wx.ID_OK:
+      inptxt=open_dig.GetPath() #files recebe o resultado da busca, incluindo o caminho   
+      
+      print 
+      return inptxt
+      
 def defineregion(mapa1,mapa2,influensprocess):
   grass.run_command("g.region",vect=mapa1+","+mapa2)
   dicregion = grass.region()
@@ -78,7 +98,6 @@ def combine_st(patchid_list):
     del b[-1]
     print b
     patchid_list=','.join(b)  
-    #print patchid_list_aux
 
     
     patchid_list_aux = patchid_list.split(",")
@@ -247,7 +266,6 @@ class Form1(wx.Panel):
         Form1.NsimulationsStart='15'
         Form1.startscale='100'
         
-        Form1.escalafina=0
         Form1.esc=100
         Form1.res=''
         Form1.res2=[]
@@ -342,6 +360,8 @@ class Form1(wx.Panel):
         Form1.dicregion=''
         Form1.influensprocess=10000
         Form1.influensprocess_boll=False
+        
+        
         
         
         
@@ -670,10 +690,10 @@ class Form1(wx.Panel):
         ID 205 : Esse bloco e executado quando o usuario deseja exportar todos os mapas apos todas as simulacoes, mas irei retirar.
         
         """ 
-        if event.GetId()==205:   #200==Select directori
+        if event.GetId()==205:
           self.logger.AppendText('Please select the directory... \n')
         
-          p=grass.mlist_grouped ('rast', pattern='*MSP*') ['PERMANENT']
+          p=grass.list_grouped ('rast', pattern='*MSP*') ['PERMANENT']
           j=len(p)
           #print j
           self.logger.AppendText('Foud: ')
@@ -685,7 +705,7 @@ class Form1(wx.Panel):
           d.Close(True)  # Close the frame. 
           
           if (retCode == wx.ID_YES):
-            Form1.OutDir_files=selecdirectori()
+            Form1.OutDir_files=selecdirectori_folder()
             os.chdir(Form1.OutDir_files)
             for i in p:
               grass.run_command('g.region', rast=i,verbose=False)
@@ -709,7 +729,7 @@ class Form1(wx.Panel):
         #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
          
         """
-        ID 210: Permite com que o usuatio va ate uma pasta a parti de uma def  selecdirectori, onde sera retornado o nome do mapa mas nao sera importado ate que se aperte o botao import files
+        ID 210: Permite com que o usuatio va ate uma pasta a partir de uma def  selecdirectori, onde sera retornado o nome do mapa mas nao sera importado ate que se aperte o botao import files
         
         """       
         if event.GetId()==210:   #210==Select files st
@@ -717,14 +737,13 @@ class Form1(wx.Panel):
           self.logger.AppendText("Waiting ... :\n")
           
           #acessando def de selecionar diretorio e armazenando o retorno na Var Form1.InArqST
-          Form1.InArqST=selecdirectori()
+          Form1.InArqST,Form1.OutArqST=selecdirectori_importfile()
           
           # Removendo extenssao do nome para ficar sem pontos
-          Form1.OutArqST=Form1.InArqST.split('\\');Form1.OutArqST=Form1.OutArqST[-1].replace('.','_')
           
           # Enviando message de dialogo
           self.logger.AppendText("Automatically Map ST Selected:\n")
-          self.logger.AppendText("\n",Form1.NEXPER_FINAL)
+          
          
          
           #---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
@@ -738,12 +757,12 @@ class Form1(wx.Panel):
                   
         if event.GetId()==230:   #230==Select files cost
           self.logger.AppendText("Waiting ... :\n")
-          Form1.InArqCost=selecdirectori()
-          Form1.OutArqCost=Form1.InArqCost.split('\\');Form1.OutArqCost=Form1.OutArqCost[-1].replace('.','_')
+          Form1.InArqCost,Form1.OutArqCost=selecdirectori_importfile()
+          
           self.logger.AppendText('Selected File: \n'+Form1.OutArqCost)
           Form1.NEXPER_FINAL=Form1.OutArqCost+'_'+Form1.NEXPER_AUX
           self.logger.AppendText("Automatically Map Cost Selected:\n")
-          self.logger.AppendText("\n",Form1.NEXPER_FINAL)
+          
         
         
         
@@ -754,7 +773,7 @@ class Form1(wx.Panel):
           
         if event.GetId()==250:
           self.logger.AppendText("Waiting ... :\n")
-          Form1.readtxt=selecdirectori()
+          Form1.readtxt=selecdirectori_importTXT()
           Form1.fileHandle = open (Form1.readtxt, 'r' )
           Form1.patch_id_list=Form1.fileHandle.read() 
           Form1.patch_id_list_aux_b=Form1.patch_id_list.split(',')
@@ -802,7 +821,7 @@ class Form1(wx.Panel):
             # Create a message dialog box
             d.ShowModal() # Shows it
             d.Destroy() # finally destroy it when finished.
-            Form1.OutDir_files_TXT=selecdirectori()
+            Form1.OutDir_files_TXT=selecdirectori_folder()
             self.logger.AppendText(" Selected output folder: \n"+Form1.OutDir_files_TXT)
             
           
@@ -979,30 +998,35 @@ class Form1(wx.Panel):
             
            
               
-            defineregion("source_shp","target_shp", Form1.influensprocess) 
+            if Form1.influensprocess_boll:
+              defineregion("source_shp","target_shp", Form1.influensprocess)  
+            else:
+              grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False) 
              
             
             
             
             
             
-            
-           
+              #
             Form1.mapa_corredores="corredores_s"+Form1.S1FORMAT+"_t"+Form1.T1FORMAT+'_COM0'
-            Form1.mapa_corredores_sem0=Form1.NEXPER_FINAL+'_'+'S_'+Form1.S1FORMAT+"_T_"+Form1.T1FORMAT
+            Form1.mapa_corredores_sem0=Form1.NEXPER_FINAL+'_'+'S_'+Form1.S1FORMAT+"_T_"+Form1.T1FORMAT            
+            Form1.ChecktTry=True
+           
             Form1.chekfolder=os.path.exists('Line_'+Form1.mapa_corredores_sem0)
-            
-            
             if Form1.chekfolder==False:
-              os.mkdir('Line_'+str(Form1.mapa_corredores_sem0))
-              Form1.outdir=Form1.OutDir_files_TXT+'\Line_'+Form1.mapa_corredores_sem0
+               #
+               os.mkdir('Line_'+str(Form1.mapa_corredores_sem0))
+               Form1.outdir=Form1.OutDir_files_TXT+'\Line_'+Form1.mapa_corredores_sem0
             else:
-              d= wx.MessageDialog( self, " Existing folder please select another location to save the lines \n"
+               d= wx.MessageDialog( self, " Existing folder please select another location to save the lines \n"
                                    ,"", wx.OK)
-              # Create a message dialog box
-              d.ShowModal() # Shows it
-              d.Destroy()              
-              Form1.outdir=selecdirectori()            
+               # Create a message dialog box
+               d.ShowModal() # Shows it
+               d.Destroy()              
+               Form1.outdir=selecdirectori_folder()
+                              
+               
             Form1.form_04='mapa_corredores=0'
             grass.mapcalc(Form1.form_04, overwrite = True, quiet = True)
             Form1.form_16='corredores_aux=0'
@@ -1018,7 +1042,10 @@ class Form1(wx.Panel):
             
             cont=0
             for i in range(Form1.Nsimulations):
-                defineregion("source_shp","target_shp", Form1.influensprocess) 
+                if Form1.influensprocess_boll:
+                  defineregion("source_shp","target_shp", Form1.influensprocess)  
+                else:
+                  grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False) 
                 Form1.form_08='mapa_custo='+Form1.listafinal[cont]
                 grass.mapcalc(Form1.form_08, overwrite = True, quiet = True)  
                 
@@ -1026,7 +1053,7 @@ class Form1(wx.Panel):
                 
                       
                 c=i+1
-                
+    
                 self.logger.AppendText('=======> runing :'+`c`+ '\n' )
                 
                 grass.run_command('r.mask',raster='source')
@@ -1119,8 +1146,13 @@ class Form1(wx.Panel):
                       Form1.form_07='custo_aux=mapa_custo*aleat2'
                       grass.mapcalc(Form1.form_07, overwrite = True, quiet = True)
                       Form1.form_07='custo_aux2=if(isnull(custo_aux),10000000,custo_aux)'
-                      grass.mapcalc(Form1.form_07, overwrite = True, quiet = True)                      
-                      defineregion("source_shp","target_shp", Form1.influensprocess) 
+                      grass.mapcalc(Form1.form_07, overwrite = True, quiet = True)     
+                      
+                      if Form1.influensprocess_boll:
+                        defineregion("source_shp","target_shp", Form1.influensprocess)  
+                      else:
+                        grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
+                        
                       grass.run_command('r.cost', flags='k', input='custo_aux2', output='custo_aux_cost', start_points='pnts_aleat_S', stop_points='pnts_aleat_T',overwrite = True)
                       grass.run_command('r.drain', input='custo_aux_cost', output='custo_aux_cost_drain', start_points='pnts_aleat_T', overwrite = True)
                       grass.run_command('r.series',input='corredores_aux,custo_aux_cost_drain', output='mapa_corredores', method='sum',overwrite = True)
@@ -1185,12 +1217,6 @@ class Form1(wx.Panel):
                   Form1.M="M5"                
                 if Form1.listafinal[cont]=='M6_Unikon':
                   Form1.M="M6"                
-                     
-                                
-                
-                
-                
-                
                 
                 Form1.linha=Form1.listafinal[cont].replace("@PERMANENT",'')+','+Form1.M+','+`c`+','+ `Form1.var_dist_line`+','+ `Form1.var_cost_sum`+','+ `Form1.var_source_x_b`+','+ `Form1.var_source_y_b`+','+ `Form1.var_target_x_b`+','+ `Form1.var_target_y_b`+','+ `Form1.euclidean_b`+ "\n"
                 Form1.linha=Form1.linha.replace('\'','')
@@ -1226,13 +1252,13 @@ class Form1(wx.Panel):
             grass.run_command('r.out.gdal',input=Form1.mapa_corredores_sem0, out=Form1.mapa_corredores_sem0+'.tif',nodata=-9999)
             self.logger.AppendText(" removing auxiliary files...: \n")  
             
-            #grass.run_command('g.remove',type="vect",name='temp_point1_s,M2_MODE,M3_MAXIMUM,M4_AVERAGE,temp_point2_s,temp_point1_t,temp_point2_t,pnts_aleat_S,pnts_aleat_T,source_shp,target_shp,custo_aux_cost_drain_sem0_line', flags='f')
-            #grass.run_command('g.remove',type="rast",name='mapa_custo,custo_aux2,mapa_corredores,custo_aux_cost_drain,source,target,custo_aux_cost_drain_sum,custo_aux_cost_drain_sem0,custo_aux_cost,custo_aux,corredores_aux,aleat,aleat2,aleat2_Gros,aleat3,aleat_Gros,apoio1', flags='f')
-            #grass.run_command('g.remove',type="rast",name='apoio2,apoio2b,apoio2c,apoio2d', flags='f')
+            grass.run_command('g.remove',type="vect",name='temp_point1_s,M2_MODE,M3_MAXIMUM,M4_AVERAGE,temp_point2_s,temp_point1_t,temp_point2_t,pnts_aleat_S,pnts_aleat_T,source_shp,target_shp,custo_aux_cost_drain_sem0_line', flags='f')
+            grass.run_command('g.remove',type="rast",name='mapa_custo,custo_aux2,mapa_corredores,custo_aux_cost_drain,source,target,custo_aux_cost_drain_sum,custo_aux_cost_drain_sem0,custo_aux_cost,custo_aux,corredores_aux,aleat,aleat2,aleat2_Gros,aleat3,aleat_Gros,apoio1', flags='f')
+            grass.run_command('g.remove',type="rast",name='apoio2,apoio2b,apoio2c,apoio2d', flags='f')
             
             
             
-            #grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
+            grass.run_command('g.region', rast=Form1.OutArqCost,verbose=False)
           if len(Form1.listExport)>1:
             grass.run_command('r.series',input=Form1.listExport,out=Form1.NEXPER_FINAL+'CorrJoin',method="maximum")
             grass.run_command('g.region', rast=Form1.NEXPER_FINAL+'CorrJoin',verbose=False)
@@ -1337,6 +1363,9 @@ class Form1(wx.Panel):
           Form1.Nsimulations3=int(event.GetString())
         if event.GetId()==193: #193=numero de simulacoes
           Form1.Nsimulations4=int(event.GetString())  
+        
+        if event.GetId()==196: #193=escala de movie windoe
+          Form1.esc=int(event.GetString())         
           
              
           
